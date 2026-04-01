@@ -4,7 +4,7 @@ const app = express();
 
 app.get('/', (req, res) => {
   logger.info({ message: "Acesso root", env: process.env.NODE_ENV });
-  res.send('Simulação DevOps Alportech');
+  res.send('Simulação DevOps Alportech - V2 rodando via Pipeline!');
 });
 
 // Endpoint para SLI de Disponibilidade
