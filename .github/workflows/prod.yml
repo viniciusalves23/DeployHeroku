@@ -1,0 +1,18 @@
+name: PROD Pipeline (CD)
+
+on:
+  push:
+    branches: [ main ] # Dispara após o merge do PR na main
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to Heroku PROD
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "vini-app-prod"
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          usedocker: true

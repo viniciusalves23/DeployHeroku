@@ -1,0 +1,44 @@
+name: HMG Pipeline
+
+on:
+  push:
+    branches-ignore: [ main ]
+
+jobs:
+  quality-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.organization=alportech
+            -Dsonar.projectKey=viniciusalves23_DeployHeroku
+
+      - name: Run Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs' # Escaneia os arquivos do projeto diretamente
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  deploy-hmg:
+    needs: quality-security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to Heroku HMG
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "vini-app-hmg"
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          usedocker: true
