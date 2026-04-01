@@ -4,7 +4,7 @@ const app = express();
 
 app.get('/', (req, res) => {
   logger.info({ message: "Acesso root", env: process.env.NODE_ENV });
-  res.send('Implementação V1');
+  res.send('Implementação V3');
 });
 
 app.get('/health', (req, res) => {
