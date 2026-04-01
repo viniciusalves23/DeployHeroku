@@ -52,13 +52,19 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: heroku container:login
 
-      # 5. Faz o Build e Push da imagem Docker para Produção
+      # 5. Muda a stack do app para aceitar Docker (PASSO ADICIONADO AQUI)
+      - name: Set Heroku Stack to Container
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku stack:set container --app vini-app-prod
+
+      # 6. Faz o Build e Push da imagem Docker para Produção
       - name: Build and Push Docker Image
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: heroku container:push web --app vini-app-prod
 
-      # 6. Libera a versão (Release) para entrar no ar
+      # 7. Libera a versão (Release) para entrar no ar
       - name: Release Docker Image
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
