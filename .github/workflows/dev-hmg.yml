@@ -12,6 +12,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 1. Prepara o ambiente Node para rodar os testes
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 2. Instala as dependências (Jest, Supertest, Express, etc)
+      - name: Install Dependencies
+        run: npm install
+
+      # 3. Roda os testes e gera o relatório de cobertura (coverage)
+      - name: Run Tests & Coverage
+        run: npm test
+
+      # 4. Envia o código e o relatório de testes para o SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
@@ -21,7 +36,9 @@ jobs:
           args: >
             -Dsonar.organization=alportech
             -Dsonar.projectKey=viniciusalves23_DeployHeroku
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
+      # 5. Scan de vulnerabilidades nas dependências
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -35,10 +52,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Deploy to Heroku HMG
-        uses: akhileshns/heroku-deploy@v3.12.12
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "vini-app-hmg"
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          usedocker: true
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Login to Heroku Container Registry
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:login
+
+      - name: Set Heroku Stack to Container
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku stack:set container --app vini-app-hmg
+
+      - name: Build and Push Docker Image
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:push web --app vini-app-hmg
+
+      - name: Release Docker Image
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:release web --app vini-app-hmg

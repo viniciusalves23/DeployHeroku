@@ -5,14 +5,77 @@ on:
     branches: [ main ] # Dispara após o merge do PR na main
 
 jobs:
-  deploy-prod:
+  quality-security:
+    name: Quality and Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Deploy to Heroku PROD
-        uses: akhileshns/heroku-deploy@v3.12.12
+      - name: Checkout Code
+        uses: actions/checkout@v3
         with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "vini-app-prod"
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          usedocker: true
+          fetch-depth: 0 # Necessário para uma análise precisa do SonarCloud
+
+      # 1. Prepara o ambiente Node para rodar os testes na Main
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 2. Instala as dependências
+      - name: Install Dependencies
+        run: npm install
+
+      # 3. Roda os testes na Main
+      - name: Run Tests & Coverage
+        run: npm test
+
+      # 4. Análise de Qualidade com SonarCloud na Main
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.organization=alportech
+            -Dsonar.projectKey=viniciusalves23_DeployHeroku
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      # 5. Análise de Segurança de Dependências com Trivy
+      - name: Run Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          exit-code: '1' # Trava o deploy de PROD se houver risco crítico
+          severity: 'CRITICAL,HIGH'
+
+  deploy-prod:
+    name: Deploy to Heroku PROD
+    needs: quality-security # Só avança para produção se os testes passarem
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Login to Heroku Container Registry
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:login
+
+      - name: Set Heroku Stack to Container
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku stack:set container --app vini-app-prod
+
+      - name: Build and Push Docker Image
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:push web --app vini-app-prod
+
+      - name: Release Docker Image
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:release web --app vini-app-prod
