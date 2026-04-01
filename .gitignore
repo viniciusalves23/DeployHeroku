@@ -1,0 +1,16 @@
+# Dependências do Node
+node_modules/
+
+# Arquivos de Log locais
+logs
+*.log
+npm-debug.log*
+
+# Variáveis de ambiente e Secrets
+.env
+.env.test
+.env.production
+
+# Arquivos de sistema operacional (Mac/Windows)
+.DS_Store
+Thumbs.db

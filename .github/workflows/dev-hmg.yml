@@ -25,7 +25,7 @@ jobs:
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs' # Escaneia os arquivos do projeto diretamente
+          scan-type: 'fs'
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
